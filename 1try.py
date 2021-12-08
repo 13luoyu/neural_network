@@ -3,6 +3,18 @@ import numpy as np
 import scipy.special
 import matplotlib.pyplot as plt
 
+#采用神经网络训练并测试MNIST数据集，输入一个数字图片，识别出图片中的数字。
+
+# - 训练集http://www.pjreddie.com/media/files/mnist_train.csv
+# - 测试集 http://www.pjreddie.com/media/files/mnist_test.csv
+#
+# - MNIST测试数据集中的10条记录——https://raw.githubusercontent.com/
+# makeyourownneuralnetwork/makeyourownneuralnetwork/master/mnist_dataset/
+# mnist_test_10.csv
+# - MNIST训练数据集中的100条记录——https://raw.githubusercontent.com/
+# makeyourownneuralnetwork/makeyourownneuralnetwork/master/mnist_dataset/
+# mnist_train_100.csv
+
 class neuralNetwork:
     def __init__(self, inputnodes, hiddennodes, outputnodes, learningrate):
         # 创建层，指定学习率
@@ -78,13 +90,13 @@ learning_rate = 0.1
 
 n=neuralNetwork(input_nodes, hidden_nodes, output_nodes, learning_rate)
 
-# data_file = open("mnist_train_100.csv", 'r')
-data_file = open("mnist_train.csv", 'r')
+# data_file = open("csv/mnist_train_100.csv", 'r')
+data_file = open("csv/mnist_train.csv", 'r')
 data_list = data_file.readlines()
 data_file.close()
 
 # 反复训练次数
-epochs = 5
+epochs = 1
 
 for e in range(epochs):
     for record in data_list:
@@ -96,8 +108,8 @@ for e in range(epochs):
         pass
     pass
 
-# data_file = open("mnist_test_10.csv", 'r')
-data_file = open("mnist_test.csv", 'r')
+# data_file = open("csv/mnist_test_10.csv", 'r')
+data_file = open("csv/mnist_test.csv", 'r')
 data_list = data_file.readlines()
 data_file.close()
 
