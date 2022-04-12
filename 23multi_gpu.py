@@ -152,6 +152,7 @@ def resnet18(num_classes, in_channels=1):
     return net
 
 net = resnet18(10)
+
 # 获取GPU列表
 devices = d2l.try_all_gpus()
 # 我们将在训练代码实现中初始化网络

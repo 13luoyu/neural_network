@@ -20,10 +20,11 @@ true_w = torch.tensor([2,-3.4])
 true_b = 4.2
 features, labels = synthetic_data(true_w, true_b, 1000)
 
-# d2l.set_figsize()
-# d2l.plt.scatter(features[:,1].numpy(),
-#                 labels.numpy(), 1)
-# d2l.plt.show()
+d2l.set_figsize()
+d2l.plt.scatter(features[:,1].numpy(),
+                labels.numpy(), 1)
+d2l.plt.show()
+
 
 # 随机选batch_size个样本
 def data_iter(batch_size, features, labels):
@@ -36,9 +37,9 @@ def data_iter(batch_size, features, labels):
         yield features[batch_indices], labels[batch_indices]
 
 batch_size = 10
-# for x,y in data_iter(batch_size,features,labels):
-#     print(x,'\n',y)
-#     break
+for x,y in data_iter(batch_size,features,labels):
+    print(x,'\n',y)
+    break
 
 
 

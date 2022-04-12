@@ -61,6 +61,8 @@ def net(x):
     return o
 
 loss = nn.CrossEntropyLoss()
+# def CrossEntropyLoss(y_hat, y):
+#     return -torch.log(y_hat[range(len(y_hat)), y])
 
 num_epochs, lr = 10, 0.1
 updater = torch.optim.SGD(params, lr=lr)

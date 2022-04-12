@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import torch
+from d2l import torch as d2l
 
 x=torch.arange(12)
 print(x)
@@ -104,6 +105,11 @@ print(torch.norm(x))
 # L1范数（绝对值之和）
 print(torch.abs(x).sum())
 
+x = torch.arange(0,3,0.1)
+def f(x):
+    return 3*x**2-4*x
+d2l.plot(x, [f(x), 2*x-3], 'x', 'f(x)', ['f(x)','Tangent line (x=1)'])
+d2l.plt.show()
 
 # y=2xTx，其中x为列向量
 x=torch.arange(4.0)  #x是向量
@@ -130,3 +136,29 @@ print(x.grad == 2*x)
 
 
 
+from torch import distributions
+fair_probs = torch.ones(6)/6
+print(fair_probs)
+# 将概率分配给⼀些离散选择的分布称为多项分布multinomial distribution
+distribution = distributions.multinomial.Multinomial(100, fair_probs)
+print(distribution.sample())
+
+# 500组实验，每组10个样本,counts形状为500*6
+counts = distributions.multinomial.Multinomial(10, fair_probs).sample((500,))
+# 下一行的每个值是当前列前面所有行的和
+cum_counts = counts.cumsum(dim=0)
+estimates = cum_counts / cum_counts.sum(dim=1, keepdims=True)
+d2l.set_figsize((6, 4.5))
+for i in range(6):
+    d2l.plt.plot(estimates[:, i].numpy(), label=('P(die='+str(i+1)+')'))
+# 画条横线
+d2l.plt.axhline(y=0.167, color='black', linestyle='dashed')
+d2l.plt.gca().set_xlabel('Groups of experiments')
+d2l.plt.gca().set_ylabel('Estimated probability')
+
+d2l.plt.legend()
+d2l.plt.show()
+
+# 查阅文档，包括包中内容和帮助
+print(dir(torch.distributions))
+print(help(torch.ones))

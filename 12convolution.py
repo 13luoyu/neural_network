@@ -14,6 +14,8 @@ from d2l import torch as d2l
 # 当a, b > △时，v(a,b)=0
 # h(i,j) = Σ(a,b=-△, △)v(a,b) x(i+a,j+b)
 
+# 卷积层的目的是1降低模型中的训练参数数量，2提取图像的结构特征
+
 # 卷积层
 # 二维交叉相关
 # input * kernel = output
@@ -72,7 +74,10 @@ for i in range(10):
     l = (y_hat - y) ** 2
     conv2d.zero_grad()
     l.sum().backward()
-    conv2d.weight.data[:] -= 3e-2 * conv2d.weight.grad
+    print(conv2d.weight.grad)
+    print(conv2d.weight.data)
+    conv2d.weight.data -= 3e-2 * conv2d.weight.grad
+    print(conv2d.weight.data)
     if (i+1)%2 == 0:
         print(f'batch {i+1}, loss {l.sum():.3f}')
 print(conv2d.weight.data)

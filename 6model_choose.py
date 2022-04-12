@@ -25,15 +25,16 @@ n_train, n_test = 100, 100
 true_w = np.zeros(max_degree)
 true_w[0:4]=np.array([5,1.2,-3.4,5.6])
 
-features = np.random.normal(size=(n_train+n_test,1))
+features = np.random.normal(size=(n_train+n_test,1))  # 正态分布
 np.random.shuffle(features)  # 200*1, 200个x
 ploy_feature = np.power(features, np.arange(max_degree).reshape(1,-1))
 # ploy_feature 200 * 20, 每行为x^0, x^1,...,x^19
 for i in range(max_degree):
     ploy_feature[:,i] /= math.gamma(i+1)  # 阶乘
-labels = np.dot(ploy_feature, true_w)  # 矩阵乘法
+labels = np.dot(ploy_feature, true_w)  # 矩阵点乘
 labels += np.random.normal(scale=0.1, size=labels.shape)  # 干扰b
 
+# 分别是w, x, x^i/i!, y
 true_w, features, ploy_feature, labels = [torch.tensor(x, dtype=torch.float32)
     for x in [true_w, features, ploy_feature, labels]]
 

@@ -14,7 +14,7 @@ from d2l import torch as d2l
 # 之后，xt=f(xt-1, ht), ht+1=g(xt, ht)
 
 T = 1000
-time = torch.arange(1, T+1, dtype=torch.float32)
+time = torch.arange(1, T+1, dtype=torch.float32)  # 1,2,...
 # 正弦波+噪声
 x = torch.sin(0.01 * time) + torch.normal(0, 0.2, (T,))
 d2l.plot(time, [x], 'time', 'x', xlim=[1,1000], figsize=(6,3))
@@ -26,6 +26,7 @@ features = torch.zeros((T-tau, tau))  # 每次只关注前tau个数据
 for i in range(tau):
     features[:, i] = x[i:T-tau+i]
 labels = x[tau:].reshape((-1,1))
+# features每4个元素得到一个labels，即xt=f(xt-1,xt-2,xt-3,xt-4)
 
 batch_size, n_train = 16, 600  # 使用前600个数据训练
 train_iter = d2l.load_array((features[:n_train],labels[:n_train]),
@@ -82,7 +83,7 @@ d2l.plt.show()
 
 max_steps = 64
 
-# features[i,j]表示当要预测未来j-tau个点时的预测序列的第i个值
+# features[i,j]表示当要预测未来j-tau个点时的预测序列的第i个输入
 features = torch.zeros((T - tau - max_steps + 1, tau + max_steps))
 # 列i（i<tau）是来自x的观测，其时间步从（i+1）到（i+T-tau-max_steps+1）
 for i in range(tau):

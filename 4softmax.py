@@ -72,7 +72,7 @@ num_outputs = 10
 w = torch.normal(0,0.01,size=(num_inputs,num_outputs),requires_grad=True)
 b = torch.zeros(num_outputs,requires_grad=True)
 
-def softmax(x):
+def softmax(x):  # x为批量数*特征数
     """softmax(xij)=e^xij/求和k(e^xik)"""
     x_exp=torch.exp(x)
     partition=x_exp.sum(1, keepdim=True)  # 对每行求和，结果为向量
@@ -84,7 +84,7 @@ def net(x):
 
 def cross_entropy(y_hat, y):
     """交叉熵损失函数"""
-    # l(y, y^) = -log(y^=y的概率)
+    # l(y, y^) = y * -log(y^)， 这里除了正确标签y=1，其余y=0
     # y[[0,1], x] = [y[0][x[0]], y[1][x[1]]]
     # y_hat[range(len(y_hat)), y]表示预测为正确类别的概率
     # y_hat[1][3]图1被归类为3的概率，y[2]=3，图2的正确归类为3
@@ -242,7 +242,7 @@ def init_weights(m):
         nn.init.normal_(m.weight, std=0.01)
 net.apply(init_weights)
 
-loss = nn.CrossEntropyLoss()  # 交叉熵损失函数
+loss = nn.CrossEntropyLoss()  # 交叉熵损失函数，就是-log(预测正确的标签的概率)
 trainer = torch.optim.SGD(net.parameters(), lr=0.1)  # 优化函数
 num_epochs = 10
 train_ch3(net, train_iter, test_iter, loss, num_epochs, trainer)

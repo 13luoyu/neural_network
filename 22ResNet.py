@@ -25,7 +25,7 @@ class Residual(nn.Module):
                                kernel_size=3, padding=1)
         if use_1x1conv:
             self.conv3 = nn.Conv2d(input_channels, num_channels,
-                                   kernel_size=1, stride=strides)
+                                   kernel_size=1, stride=strides)  # 作用是改变通道数，使得x和y通道数一样
         else:
             self.conv3 = None
         self.bn1 = nn.BatchNorm2d(num_channels)

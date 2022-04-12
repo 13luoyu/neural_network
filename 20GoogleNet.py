@@ -64,7 +64,7 @@ b4 = nn.Sequential(Inception(480, 192, (96, 208), (16, 48), 64),
     nn.MaxPool2d(kernel_size=3, stride=2, padding=1))
 b5 = nn.Sequential(Inception(832, 256, (160, 320), (32, 128), 128),
     Inception(832, 384, (192, 384), (48, 128), 128),
-    nn.AdaptiveAvgPool2d((1,1)),
+    nn.AdaptiveAvgPool2d((1,1)),  # 全局平均池化层，平均到给定的高宽，通道数和批量数不变
     nn.Flatten())
 # 所有的超参数都是试出来的
 net = nn.Sequential(b1,b2,b3,b4,b5, nn.Linear(1024, 10))

@@ -49,7 +49,7 @@ for blk in net:
     print(blk.__class__.__name__,'output shape:\t',x.shape)
 
 # 更小的网络训练
-ratio = 4
+ratio = 4  #  //表示除法向下取整
 small_conv_arch = [(pair[0], pair[1]//ratio) for pair in conv_arch]
 net = vgg(small_conv_arch)
 
@@ -57,7 +57,7 @@ lr, num_epochs, batch_size = 0.05, 10, 64
 # 将Fashion-MNIST图像分辨率扩为224*224
 trans = [torchvision.transforms.ToTensor()]
 trans.insert(0, torchvision.transforms.Resize(224))
-trans = torchvision.transforms.Compose(trans)
+trans = torchvision.transforms.Compose(trans)  # 作用：几个图像变换组合在一起,按照给出的transform顺序进行计算。
 
 mnist_train = torchvision.datasets.FashionMNIST(
     root="data", train=True, transform=trans, download=True)

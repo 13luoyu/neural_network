@@ -26,8 +26,8 @@ class MySequential(nn.Module):
     """实现nn.Sequential()"""
     def __init__(self, *args):
         super().__init__()
-        for block in args:
-            self._modules[block] = block
+        for index, block in enumerate(args):
+            self._modules[str(index)] = block
 
     def forward(self, x):
         for block in self._modules.values():
@@ -39,7 +39,7 @@ print(net(x))
 
 
 class FixedHiddenMLP(nn.Module):
-    """更灵活的神经网络计算"""
+    """更灵活的神经网络计算，一些层不更新权重，还有一些自定义运算（控制流）"""
     def __init__(self):
         super().__init__()
         self.rand_weight = torch.rand((20,20), requires_grad=False)  # 不计算梯度，不参与训练
@@ -65,7 +65,7 @@ x=torch.rand(size=(2,4))
 print(net(x))
 print(net[2].state_dict())  # OrderedDict类，包含weight和bias
 print(type(net[2].bias))  # Parameter类，可以训练的值
-print(net[2].bias)
+print(net[2].bias)  # 类
 print(net[2].bias.data)  # 值
 print(net[2].bias.grad == None)  # 梯度，因为还没训练，所以为None
 
@@ -73,11 +73,23 @@ print(net[2].bias.grad == None)  # 梯度，因为还没训练，所以为None
 print(*[(name, param.shape) for name, param in net.named_parameters()])
 print(net.state_dict()['0.weight'])
 
+
+def block1():
+    return nn.Sequential(nn.Linear(4,8),nn.ReLU(),nn.Linear(8,4),nn.ReLU());
+def block2():
+    net = nn.Sequential()
+    for i in range(4):
+        net.add_module(f'block{i}', block1())
+    return net
+net = nn.Sequential(block2(), nn.Linear(4,1))
 # 可以查看网络构造
 print(net)
+# 访问第一个块中，第二个子块的第一层的偏置
+print(net[0][1][0].bias)
+
 
 # 内置初始化
-def init_normal(m):  # 正态分布，m为module
+def init_normal(m):  # 正态分布，m为module，是具体哪一层
     if type(m) == nn.Linear:
         nn.init.normal_(m.weight, mean=0, std=0.01)
         nn.init.zeros_(m.bias)
@@ -96,7 +108,7 @@ print(net[0].weight.data)
 print(net[0].bias.data)
 
 #对不同层使用不同初始化函数
-def xavier(m):  # 见9numerical_stability，xavier均匀分布
+def xavier(m):  # 见9numerical_stability，xavier分布
     if type(m) == nn.Linear:
         nn.init.xavier_normal_(m.weight)
 
@@ -107,7 +119,8 @@ print(net[2].weight.data)
 # 参数绑定，希望两个层共享参数
 shared = nn.Linear(8,8)
 net = nn.Sequential(nn.Linear(4,8),nn.ReLU(),shared,nn.ReLU(),shared)
-
+# 反向传播中，由于模型参数包含梯度，因此在反向传播期间第⼆个隐藏层（即第三个神经⽹络层）和第三个隐藏层
+# （即第五个神经⽹络层）的梯度会加在⼀起。
 
 
 # 自定义linear层
@@ -155,6 +168,7 @@ net=MLP()
 x=torch.randn(size=(2,20))
 y=net(x)
 
+# 保存模型参数
 torch.save(net.state_dict(), 'temp3')
 clone = MLP()
 clone.load_state_dict(torch.load('temp3'))
@@ -162,9 +176,14 @@ print(clone)
 y_clone = clone(x)
 print(y == y_clone)
 
+# 保存模型，包括结构和参数
+torch.save(net, 'temp4')
+net = torch.load('temp4')
+
 os.remove('temp')
 os.remove('temp2')
 os.remove('temp3')
+os.remove('temp4')
 
 
 

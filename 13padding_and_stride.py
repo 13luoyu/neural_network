@@ -27,9 +27,9 @@ from torch import nn
 # 给定高度sh和宽度sw步幅，输出形状是(nh-kh+ph)/sh+1 * (nw-kw+pw)/sw+1（都向下取整）
 
 def comp_conv2d(conv2d,x):
-    x = x.reshape((1,1) + x.shape)
+    x = x.reshape((1,1) + x.shape)  # 1批量,1通道,高,宽
     y = conv2d(x)
-    return y.reshape(y.shape[2:])
+    return y.reshape(y.shape[2:])  # 高，宽
 
 conv2d = nn.Conv2d(1, 1, kernel_size=(3,3), padding=1)  # 所有侧边填充1个像素
 x = torch.rand(size=(8,8))

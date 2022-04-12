@@ -28,7 +28,7 @@ from d2l import torch as d2l
 
 
 def corr2d_multi_in(x,k):
-    """多通道输入"""
+    """多通道输入，单通道输出"""
     return sum(d2l.corr2d(xx,kk) for xx,kk in zip(x,k))
 x = torch.tensor([[[0.0,1.0,2.0],[3.0,4.0,5.0],[6.0,7.0,8.0]],
                   [[1.0,2.0,3.0],[4.0,5.0,6.0],[7.0,8.0,9.0]]])  # 3*3*2
@@ -42,7 +42,7 @@ def corr2d_multi_in_out(x,k):
     # torch.stack(inputs, dim) -> Tensor，参数dim选择生成的维度
     return torch.stack([corr2d_multi_in(x,kk) for kk in k], 0)
 
-k = torch.stack((k,k+1,k+2), 0)
+k = torch.stack((k,k+1,k+2), 0)  # 输出通道，输入通道，高，宽
 print(k)
 
 y = corr2d_multi_in_out(x, k)

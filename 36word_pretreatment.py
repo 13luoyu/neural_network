@@ -1,7 +1,6 @@
 import collections
 import re
 from d2l import torch as d2l
-
 # 自然语言处理中的文本预处理
 
 #下载一本书
@@ -23,16 +22,15 @@ print(lines[10])
 def tokenize(lines, token='word'):
     """将文本行拆分为单词或字符词元"""
     if token == 'word':
-        return [line.split() for line in lines]
+        return [line.split() for line in lines]  # 以空格分割
     elif token == 'char':
-        return [list(line) for line in lines]
+        return [list(line) for line in lines]  #list函数将字符串转为一个个字符组成的列表
     else:
         print('错误：未知词元类型：' + token)
 
 tokens = tokenize(lines)
 for i in range(11):
     print(tokens[i])
-
 
 
 #  文本词表
@@ -47,7 +45,7 @@ class Vocab:
         # 按出现频率排序
         counter = count_corpus(tokens)  # 计算出现次数，结果为{词:次数}
         self._token_freqs = sorted(counter.items(), key=lambda x: x[1],
-                                   reverse=True)  # 排序
+                                   reverse=True)  # 从大到小排序
         # 未知词元的索引为0
         self.unk, uniq_tokens = 0, ['<unk>']+reserved_tokens
         # uniq_tokens是一个数组，它保存所有token，不重复，第0个为<unk>，后面为reserved_tokens，后面为其他token
@@ -91,14 +89,14 @@ for i in [0, 10]:
 
 
 def load_corpus_time_machine(max_tokens=-1):
-    """返回数据集的标记索引列表和词汇表"""
+    """返回数据集的索引值列表和词汇表"""
     lines = read_time_machine()
-    tokens = tokenize(lines, 'char')
+    tokens = tokenize(lines, 'char')  # 字符
     vocab = Vocab(tokens)
     corpus = [vocab[token] for line in tokens for token in line]
     if max_tokens > 0:
         corpus = corpus[:max_tokens]
     return corpus, vocab
-corpus, vocab = load_corpus_time_machine()
+corpus, vocab = load_corpus_time_machine()  # corpus为索引
 print(len(corpus), len(vocab))  # 28是26字母+空格+<unk>
 
