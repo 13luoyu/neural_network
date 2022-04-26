@@ -91,6 +91,7 @@ def cross_entropy(y_hat, y):
     # 然后取负对数，概率越小，结果（损失）越大
     # y_hat为256*10矩阵，因为一次输入256张图，10个分类结果
     loss=-torch.log(y_hat[range(len(y_hat)), y])  # loss = 256向量
+    # len([[1,2][3,4]]) = 2
     return loss
 
 def accuracy(y_hat, y):
