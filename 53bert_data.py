@@ -45,6 +45,7 @@ def _get_nsp_data_from_paragraph(paragraph, paragraphs, vocab, max_len):
         # 获得加入上两个词元的tokens和用以区分的segments
         tokens, segments = d2l.get_tokens_and_segments(tokens_a, tokens_b)
         nsp_data_from_paragraph.append((tokens, segments, is_next))
+    # 返回经过打乱后的段，包含（句子对，区分句子对的节，句子对是否连续）
     return nsp_data_from_paragraph
 
 
@@ -98,6 +99,7 @@ def _get_mlm_data_from_tokens(tokens, vocab):
                                        key=lambda x: x[0])  # 依据position排序
     pred_positions = [v[0] for v in pred_positions_and_labels]
     mlm_pred_labels = [v[1] for v in pred_positions_and_labels]
+    # 返回要预测的掩蔽后的数据，要预测的位置，真实值
     return vocab[mlm_input_tokens], pred_positions, vocab[mlm_pred_labels]
 
 
@@ -164,6 +166,10 @@ class _WikiTextDataset(torch.utils.data.Dataset):
             examples, max_len, self.vocab)
 
     def __getitem__(self, idx):
+        # 分别是一个句子对（带填充），区分句子对的标识（带填充）
+        # 句子对不带填充的长度，要预测的位置（带填充）
+        # 句子对中预测点为1，填充为0的掩码，掩码预测的结果（带填充）
+        # 下一个句子预测的结果
         return (self.all_token_ids[idx], self.all_segments[idx],
                 self.valid_lens[idx], self.all_pred_positions[idx],
                 self.all_mlm_weights[idx], self.all_mlm_labels[idx],

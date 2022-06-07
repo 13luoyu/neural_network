@@ -39,7 +39,7 @@ def cls_predicator(num_inputs, num_anchors, num_classes):
 # 卷积层输入有3维，高宽通道数，输出3维，高宽通道数，每个通道标识了一个锚框对一个类的特征提取
 
 
-# 边界框预测层
+# 边界框预测层，为每个锚框预测4个偏移量
 def bbox_predicator(num_inputs, num_achors):
     # 4指的是4个坐标值
     return nn.Conv2d(num_inputs, num_achors*4,
@@ -105,7 +105,7 @@ def get_blk(i):
 #  给每个块定义前向计算
 def blk_forward(X, blk, size, ratio, cls_predictor, bbox_predictor):
     Y = blk(X)  # 特征提取
-    anchors = d2l.multibox_prior(Y, sizes=size, ratios=ratio)  # 生成锚框
+    anchors = d2l.multibox_prior(Y, sizes=size, ratios=ratio)  # 生成锚框，（1，锚框数，4）
     cls_preds = cls_predictor(Y)  # 类别预测  (批量数，锚框数*(类数+1)，高，宽)
     bbox_preds = bbox_predictor(Y)  # 边界预测  (批量数，锚框数*4，高，宽)
     return (Y, anchors, cls_preds, bbox_preds)
@@ -138,11 +138,11 @@ class TinySSD(nn.Module):
             X, anchors[i], cls_preds[i], bbox_preds[i] = blk_forward(
                 X, getattr(self, f'blk_{i}'), sizes[i], ratios[i],
                 getattr(self, f'cls_{i}'), getattr(self, f'bbox_{i}'))
-        anchors = torch.cat(anchors, dim=1)  # 三维变三维，将所有锚框合起来
-        cls_preds = concat_preds(cls_preds)  # 四维变二维
+        anchors = torch.cat(anchors, dim=1)  # 四维变三维，将所有batch合成一个batch（其实只有一个batch）
+        cls_preds = concat_preds(cls_preds)  # 五维变二维（批量数，锚框数*(类别数+1)*高*宽的和）
         cls_preds = cls_preds.reshape(
-            cls_preds.shape[0], -1, self.num_classes + 1)  # 二维变三维（批量，锚框数，类别数）
-        bbox_preds = concat_preds(bbox_preds)  # 四维变二维
+            cls_preds.shape[0], -1, self.num_classes + 1)  # 二维变三维（批量，锚框数*高*宽，类别数）
+        bbox_preds = concat_preds(bbox_preds)  # 五维变二维(批量数，锚框数*4*高*宽的和)，注意类预测、边界框预测的高宽都是1
         return anchors, cls_preds, bbox_preds
         # 返回锚框，对类的预测，对边界框的预测
 
@@ -165,7 +165,7 @@ bbox_loss = nn.L1Loss(reduction='none')  # 差绝对值
 
 def calc_loss(cls_preds, cls_labels, bbox_preds, bbox_labels, bbox_masks):
     batch_size, num_classes = cls_preds.shape[0], cls_preds.shape[2]
-    cls = cls_loss(cls_preds.reshape(-1, num_classes),  # 批量和锚框数合并为一维
+    cls = cls_loss(cls_preds.reshape(-1, num_classes),  # 类别数和锚框数合并为一维
                    cls_labels.reshape(-1)).reshape(batch_size, -1).mean(dim=1)
     bbox = bbox_loss(bbox_preds * bbox_masks,  # 如果是背景，就不要算偏移了，mask=0
                      bbox_labels * bbox_masks).mean(dim=1)
@@ -195,7 +195,7 @@ for epoch in range(num_epochs):
         trainer.zero_grad()
         X, Y = features.to(device), target.to(device)
         # 生成多尺度的锚框，为每个锚框预测类别和偏移量
-        anchors, cls_preds, bbox_preds = net(X)  # 由预测一个y，变为返回锚框，类预测，边框预测
+        anchors, cls_preds, bbox_preds = net(X)  # 由预测一个y，变为返回锚框，类预测，边框预测偏移
         # 为每个锚框标注类别和偏移量
         bbox_labels, bbox_masks, cls_labels = d2l.multibox_target(anchors, Y)
         # 根据类别和偏移量的预测和标注值计算损失函数
@@ -216,13 +216,13 @@ d2l.plt.show()
 
 
 # 测试
-X = torchvision.io.read_image('data/banana-detection/bananas_val/0.png').unsqueeze(0).float()
+X = torchvision.io.read_image('data/banana-detection/bananas_val/images/0.png').unsqueeze(0).float()
 img = X.squeeze(0).permute(1, 2, 0).long()
 def predict(X):
     net.eval()
     anchors, cls_preds, bbox_preds = net(X.to(device))
-    cls_probs = F.softmax(cls_preds, dim=2).permute(0, 2, 1)
-    output = d2l.multibox_detection(cls_probs, bbox_preds, anchors)
+    cls_probs = torch.softmax(cls_preds, dim=2).permute(0, 2, 1)  # (batch_size, 类别，锚框数)，值为概率
+    output = d2l.multibox_detection(cls_probs, bbox_preds, anchors)  # 每个锚框最可能的类别、该类别的概率以及锚框的坐标
     idx = [i for i, row in enumerate(output[0]) if row[0] != -1]
     return output[0, idx]  # 返回非背景的预测
 output = predict(X)
@@ -239,3 +239,4 @@ def display(img, output, threshold):
         bbox = [row[2:6] * torch.tensor((w, h, w, h), device=row.device)]
         d2l.show_bboxes(fig.axes, bbox, '%.2f' % score, 'w')
 display(img, output.cpu(), threshold=0.9)
+d2l.plt.show()

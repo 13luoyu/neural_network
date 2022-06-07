@@ -33,7 +33,7 @@ print(y)
 
 # 使用高级API
 X, K = X.reshape(1, 1, 2, 2), K.reshape(1, 1, 2, 2)
-tconv = nn.ConvTranspose2d(1, 1, kernel_size=2, bias=False)
+tconv = nn.ConvTranspose2d(1, 1, kernel_size=2, bias=False)  # 转置卷积，前两个参数为输入通道和输出通道
 tconv.weight.data = K
 y = tconv(X)
 print(y)
@@ -59,7 +59,7 @@ print(y)
 #                 0 0 0 0     0 0 0 0     4 6 0 0     0 0 6 9     4 6 6 9
 
 # 通道数卷积和转置卷积没有区别
-# 验证卷积后，使用转置卷积，可以变回来
+# 验证卷积后，使用转置卷积，形状可以变回来
 X = torch.rand(size=(1, 10, 16, 16))
 conv = nn.Conv2d(10, 20, kernel_size=5, padding=2, stride=3)
 tconv = nn.ConvTranspose2d(20, 10, kernel_size=5, padding=2, stride=3)
@@ -86,3 +86,4 @@ print(y == torch.matmul(W,X.reshape(-1)).reshape(2,2))
 # 验证转置卷积结论
 z = trans_conv(y,K)
 print(z == torch.matmul(W.T,y.reshape(-1)).reshape(3,3))
+# 卷积和转置卷积，转换为矩阵乘法，只是将权重W进行转置

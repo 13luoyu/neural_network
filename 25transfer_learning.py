@@ -9,7 +9,7 @@ import torchvision
 from torch import nn
 from d2l import torch as d2l
 
-# 微调
+# 微调 fine-tuning
 # 标注一个数据集很贵
 # 一般，一个神经网络可以分为2部分：底部的特征抽取，将原始像素变成容易线性分隔的特征，
 # 上部的线性分类器进行分类
@@ -74,23 +74,23 @@ train_imgs = torchvision.datasets.ImageFolder(os.path.join(data_dir, 'train'))
 test_imgs = torchvision.datasets.ImageFolder(os.path.join(data_dir, 'test'))
 
 hotdogs = [train_imgs[i][0] for i in range(8)]
-not_hotdogs = [train_imgs[-i - 1][0] for i in range(8)]
+not_hotdogs = [train_imgs[-i - 1][0] for i in range(8)]  # 倒数8张图片
 d2l.show_images(hotdogs + not_hotdogs, 2, 8, scale=1.4)
 d2l.plt.show()
 
 # 使用RGB通道的均值和标准差，以标准化每个通道
 normalize = torchvision.transforms.Normalize(
-    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+    [0.485, 0.456, 0.406], [0.229, 0.224, 0.225])  # 参数分别是每个通道归一化的mean和std
 
 train_augs = torchvision.transforms.Compose([
-    torchvision.transforms.RandomResizedCrop(224),
+    torchvision.transforms.RandomResizedCrop(224),  # 随机裁剪到指定尺寸
     torchvision.transforms.RandomHorizontalFlip(),
     torchvision.transforms.ToTensor(),
     normalize])
 
 test_augs = torchvision.transforms.Compose([
-    torchvision.transforms.Resize(256),
-    torchvision.transforms.CenterCrop(224),
+    torchvision.transforms.Resize(256),  # 缩放到256*256
+    torchvision.transforms.CenterCrop(224),  #CenterCrop：在图片的中间区域进行裁剪
     torchvision.transforms.ToTensor(),
     normalize])
 

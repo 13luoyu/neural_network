@@ -186,6 +186,7 @@ class SNLIBERTDataset(torch.utils.data.Dataset):
 
     def _preprocess(self, all_premise_hypothesis_tokens):
         pool = multiprocessing.Pool(4)  # 使用4个进程，这里有bug
+        # 执行self._mp_worker函数，参数为...
         out = pool.map(self._mp_worker, all_premise_hypothesis_tokens)
         all_token_ids = [
             token_ids for token_ids, segments, valid_len in out]

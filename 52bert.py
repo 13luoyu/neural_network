@@ -13,6 +13,7 @@
 # 3位置编码可学习
 # BERT预训练任务：
 # 1Transformer编码器是双向的，而标准语言模型要求单向（前面不能看到后面的词）
+# BERT随机掩蔽词元并使用来自双向上下文的词元以自监督的方式预测掩蔽词元
 # BERT是带掩码的语言，每次随机将一些词元（15%）替换为<mask>
 # 实际上，BERT的做法是：对选中的词元，80%的时间替换为<mask>，10%的时间替换为随机词元，10%的时间不变
 # 2下一句子预测，预测一个句子对中两个句子是不是相邻的
@@ -32,7 +33,7 @@ def get_tokens_and_segments(token_a, token_b=None):
         tokens += token_b + ['<seq>']
         segments += [1] * (len(token_b) + 1)
     return tokens, segments
-
+    # segments是将<cls>第一句<seq>标记为0，将第二句<seq>标记为1
 
 class BERTEncoder(nn.Module):
     """BERT编码器"""
@@ -47,19 +48,31 @@ class BERTEncoder(nn.Module):
         for i in range(num_layers):
             self.blks.add_module(f"{i}", d2l.EncoderBlock(
                 key_size, query_size, value_size, num_hiddens, norm_shape,
-                ffn_num_input, ffn_num_hiddens, num_heads, dropout, True))
+                ffn_num_input, ffn_num_hiddens, num_heads, dropout, use_bias=True))
         # 在BERT中，位置嵌入是可学习的，因此我们创建一个足够长的位置嵌入参数
         self.pos_embedding = nn.Parameter(torch.randn(1, max_len,  # max_len为位置编码最大长度(也就是序列x的最大长度)
                                                       num_hiddens))
 
     def forward(self, tokens, segments, valid_lens):
         # 在以下代码段中，X的形状保持不变：（批量大小，最大序列长度，num_hiddens）
+        # 词元嵌入，段嵌入（段嵌入用以区分两句话）
         X = self.token_embedding(tokens) + self.segment_embedding(segments)
-        X = X + self.pos_embedding.data[:, :X.shape[1], :]
+        X = X + self.pos_embedding.data[:, :X.shape[1], :]  # 位置编码
         for blk in self.blks:
             X = blk(X, valid_lens)
         return X
 
+
+# normalized_shape
+# 如果传入整数，比如4，则被看做只有一个整数的list，此时LayerNorm会对输入的最后一维进行归一化，这个int值需要和输入的最后一维一样大。
+#
+# 假设此时输入的数据维度是[3, 4]，则对3个长度为4的向量求均值方差，得到3个均值和3个方差，分别对这3行进行归一化（每一行的4个数字都是均值为0，方差为1）；LayerNorm中的weight和bias也分别包含4个数字，重复使用3次，对每一行进行仿射变换（仿射变换即乘以weight中对应的数字后，然后加bias中对应的数字），并会在反向传播时得到学习。
+# 如果输入的是个list或者torch.Size，比如[3, 4]或torch.Size([3, 4])，则会对网络最后的两维进行归一化，且要求输入数据的最后两维尺寸也是[3, 4]。
+#
+# 假设此时输入的数据维度也是[3, 4]，首先对这12个数字求均值和方差，然后归一化这个12个数字；weight和bias也分别包含12个数字，分别对12个归一化后的数字进行仿射变换（仿射变换即乘以weight中对应的数字后，然后加bias中对应的数字），并会在反向传播时得到学习。
+# 假设此时输入的数据维度是[N, 3, 4]，则对着N个[3,4]做和上述一样的操作，只是此时做仿射变换时，weight和bias被重复用了N次。
+# 假设此时输入的数据维度是[N, T, 3, 4]，也是一样的，维度可以更多。
+# 注意：显然LayerNorm中weight和bias的shape就是传入的normalized_shape。
 vocab_size, num_hiddens, ffn_num_hiddens, num_heads = 10000, 768, 1024, 4
 norm_shape, ffn_num_input, num_layers, dropout = [768], 768, 2, 0.2
 encoder = BERTEncoder(vocab_size, num_hiddens, norm_shape, ffn_num_input,
@@ -81,7 +94,8 @@ class MaskLM(nn.Module):
                                  nn.Linear(num_hiddens, vocab_size))
 
     def forward(self, X, pred_positions):
-        # X为BERTEncoder的输出，pred_positions为哪些地方要去预测
+        # X为BERTEncoder的输出，pred_positions为哪些地方要去预测(batch_size, 要预测的地方数)
+        # 这些要去预测的地方最初输入为<mask>，x为其编码
         num_pred_positions = pred_positions.shape[1]  # 一个batch中要去预测的地方数
         pred_positions = pred_positions.reshape(-1)  # batch_size*num_pred_positions
         batch_size = X.shape[0]
@@ -122,11 +136,13 @@ class NextSentencePred(nn.Module):
         # X的形状：(batchsize,num_hiddens)
         return self.output(X)
 
-encoded_X = torch.flatten(encoded_X, start_dim=1)
+# 由于Transformer编码器中的自注意力，特殊词元“<cls>”的BERT表示已经对输入的两个句子进行了编码
+# 使用它作为输入预测
+encoded_X_cls = encoded_X[:, 0, :]
 # NSP的输入形状:(batchsize，num_hiddens * 序列长)
-nsp = NextSentencePred(encoded_X.shape[-1])
-nsp_Y_hat = nsp(encoded_X)
-print(nsp_Y_hat.shape)
+nsp = NextSentencePred(encoded_X_cls.shape[-1])
+nsp_Y_hat = nsp(encoded_X_cls)
+print(nsp_Y_hat.shape)  # batch_size, 2
 
 nsp_y = torch.tensor([0, 1])
 nsp_l = loss(nsp_Y_hat, nsp_y)

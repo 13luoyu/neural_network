@@ -37,6 +37,7 @@ def preprocess(img, image_shape):
         torchvision.transforms.Resize(image_shape),
         torchvision.transforms.ToTensor(),
         torchvision.transforms.Normalize(mean=rgb_mean, std=rgb_std)])
+    # normalize的操作为 (x - mean) / std
     return transforms(img).unsqueeze(0)
 
 def postprocess(img):
@@ -86,8 +87,10 @@ def gram(X):  # 格拉姆矩阵X*XT
     # X*XT矩阵中，Xij代表通道i和j上风格特征相关性，结果为c*c矩阵，
     return torch.matmul(X, X.T) / (num_channels * n)
 def style_loss(Y_hat, gram_Y):
+    """样式损失，要求通道之间相似度和样式图片的相似度一样"""
     return torch.square(gram(Y_hat) - gram_Y.detach()).mean()
-# 全变分损失，表示像素尽可能与临近像素值相似
+
+# 全变分损失，表示像素尽可能与临近像素值相似，避免出现过亮或暗的点
 def tv_loss(Y_hat):
     return 0.5 * (torch.abs(Y_hat[:, :, 1:, :] - Y_hat[:, :, :-1, :]).mean() +
                   torch.abs(Y_hat[:, :, :, 1:] - Y_hat[:, :, :, :-1]).mean())
@@ -123,7 +126,7 @@ def get_inits(X, device, lr, styles_Y):
 
 def train(X, contents_Y, styles_Y, device, lr, num_epochs, lr_decay_epoch):
     X, styles_Y_gram, trainer = get_inits(X, device, lr, styles_Y)
-    scheduler = torch.optim.lr_scheduler.StepLR(trainer, lr_decay_epoch, 0.8)
+    scheduler = torch.optim.lr_scheduler.StepLR(trainer, lr_decay_epoch, 0.8)  # lr衰退
     animator = d2l.Animator(xlabel='epoch', ylabel='loss',
                             xlim=[10, num_epochs],
                             legend=['content', 'style', 'TV'],

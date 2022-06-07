@@ -56,9 +56,9 @@ DATA_HUB['voc2012'] = (DATA_URL + 'VOCtrainval_11-May-2012.tar',
                            '4e443f8a2eca6b1dac8a6c57641b67dd40621a49')
 
 voc_dir = download_extract('voc2012', 'VOCdevkit/VOC2012')
-# voc_dir = 'F:/network/pythonProject/data/VOCdevkit/VOC2012'
+# voc_dir = 'F:/network/pytorch/data/VOCdevkit/VOC2012'
 
-# 将所有输入图像和标签读入内存，非常耗时
+# 将所有输入图像（2GB）和标签读入内存，非常耗时
 def read_voc_images(voc_dir, is_train=True):
     """读取所有VOC图像并标注"""
     txt_fname = os.path.join(voc_dir, 'ImageSets', 'Segmentation',
@@ -104,7 +104,7 @@ def voc_colormap2label():
     return colormap2label  # colormap2label[RGB颜色] = 012...index
 
 def voc_label_indices(colormap, colormap2label):
-    """将VOC标签中的RGB值映射到它们的类别索引"""
+    """将VOC标签中的RGB值映射到它们的类别索引，输入是一个图像，输出是一个矩阵"""
     colormap = colormap.permute(1, 2, 0).numpy().astype('int32')
     idx = ((colormap[:, :, 0] * 256 + colormap[:, :, 1]) * 256
            + colormap[:, :, 2])
@@ -121,7 +121,7 @@ print(y[105:115,130:140], VOC_CLASSES[1])
 def voc_rand_crop(feature, label, height, width):
     """随机裁剪特征和标签图像"""
     rect = torchvision.transforms.RandomCrop.get_params(
-        feature, (height, width))  # 对图片裁剪指定的高宽，返回一个裁剪框
+        feature, (height, width))  # 对图片随机裁剪指定的高宽，返回一个裁剪框
     feature = torchvision.transforms.functional.crop(feature, *rect)  # 使用裁剪框裁剪
     label = torchvision.transforms.functional.crop(label, *rect)
     return feature, label
@@ -130,7 +130,7 @@ imgs = []
 for _ in range(n):
     imgs += voc_rand_crop(train_features[0], train_labels[0], 200, 300)
 imgs = [img.permute(1, 2, 0) for img in imgs]
-d2l.show_images(imgs[::2] + imgs[1::2], 2, n)
+d2l.show_images(imgs[::2] + imgs[1::2], 2, n)  # 列表的用法seq[start:end:step]
 d2l.plt.show()
 
 
@@ -161,7 +161,7 @@ class VOCSegDataset(torch.utils.data.Dataset):
         feature, label = voc_rand_crop(self.features[idx], self.labels[idx],
                                        *self.crop_size)  # 裁剪
         return (feature, voc_label_indices(label, self.colormap2label))
-        # 这里的label不是图片了，而是根据RGB换算成的012坐标
+        # 这里的label不是图片了，而是根据RGB换算成的012坐标，指明每个像素是什么
 
     def __len__(self):
         return len(self.features)

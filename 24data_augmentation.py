@@ -47,7 +47,7 @@ color_aug = torchvision.transforms.ColorJitter(
 )
 apply(img, color_aug)
 
-augs = torchvision.transforms.Compose([
+augs = torchvision.transforms.Compose([  # Compose将多种变换组合起来
     torchvision.transforms.RandomHorizontalFlip(),
     shape_aug, color_aug
 ])

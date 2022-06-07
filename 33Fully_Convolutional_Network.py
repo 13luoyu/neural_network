@@ -5,7 +5,7 @@ from torch.nn import functional as F
 from d2l import torch as d2l
 import _31semantic_segmentation
 
-# 全连接卷积神经网络FCN
+# 全卷积网络FCN
 # FCN使用转置卷积层替换CNN最后的全连接层，从而实现每个像素的预测
 # img -> CNN -> 1*1Conv -> Transposed conv -> img
 
@@ -30,7 +30,7 @@ net.add_module('transpose_conv',
                                   kernel_size=64, padding=16,
                                   stride=32))
 print(net(x).shape)
-
+# 输出形状为(batch_size, num_classes, 320, 480)
 
 
 # 有时我们需要放大图片，双线性插值是一种方法（上采样），它也可以被用来初始化转置卷积层
@@ -43,7 +43,7 @@ def bilinear_kernel(in_channels, out_channels, kernel_size):
     og = (torch.arange(kernel_size).reshape(-1, 1),
           torch.arange(kernel_size).reshape(1, -1))
     filt = (1 - torch.abs(og[0] - center) / factor) * \
-           (1 - torch.abs(og[1] - center) / factor)
+           (1 - torch.abs(og[1] - center) / factor)  # 中间的接近1，边缘接近0
     weight = torch.zeros((in_channels, out_channels,
                           kernel_size, kernel_size))
     weight[range(in_channels), range(out_channels), :, :] = filt

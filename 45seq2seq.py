@@ -66,21 +66,24 @@ class Seq2SeqDecoder(d2l.Decoder):
         self.dense = nn.Linear(num_hiddens, vocab_size)
 
     def init_state(self, enc_outputs, *args):
-        return enc_outputs[1]  # enc_outputs为(output, state)，这里返回state
+        return (enc_outputs[1], enc_outputs[1][-1])
+        # enc_outputs为(output, state)，这里返回state，和最后一层的state
 
     def forward(self, X, state):
         # 输出'X'的形状：(batch_size,num_steps,embed_size)
+        # state形状(num_layer, batch_size, num_hiddens)
         X = self.embedding(X).permute(1, 0, 2)  # 时间步，批量，向量维度
+        decoder_last_state, encoder_lastlayer_state = state
         # 广播context，使其具有与X相同的num_steps
-        context = state[-1].repeat(X.shape[0], 1, 1)  # 取最后一个num_layers的输出，重复time_steps次
+        context = encoder_lastlayer_state.repeat(X.shape[0], 1, 1)  # 取最后一个num_layers的输出，重复time_steps次
         # 此时x.shape = 时间步，批量，向量维度
         # context.shape = 时间步，批量，隐藏层数
         X_and_context = torch.cat((X, context), 2)  # 最后一个维度不同，将其连接起来
-        output, state = self.rnn(X_and_context, state)
+        output, state = self.rnn(X_and_context, decoder_last_state)
         output = self.dense(output).permute(1, 0, 2)
         # output的形状:(batch_size,num_steps,vocab_size)
         # state的形状:(num_layers,batch_size,num_hiddens)
-        return output, state
+        return output, (state, encoder_lastlayer_state)
 
 decoder = Seq2SeqDecoder(vocab_size=10, embed_size=8, num_hiddens=16,
                          num_layers=2)
@@ -102,6 +105,19 @@ def sequence_mask(X, valid_len, value=0):
 
 X = torch.tensor([[1, 2, 3], [4, 5, 6]])
 print(sequence_mask(X, torch.tensor([1, 2])))
+
+
+def cross_entropy(y_hat, y):
+    """交叉熵损失函数"""
+    # l(y, y^) = y * -log(y^)， 这里除了正确标签y=1，其余y=0
+    # y[[0,1], x] = [y[0][x[0]], y[1][x[1]]]
+    # y_hat[range(len(y_hat)), y]表示预测为正确类别的概率
+    # y_hat[1][3]图1被归类为3的概率，y[2]=3，图2的正确归类为3
+    # 然后取负对数，概率越小，结果（损失）越大
+    # y_hat为256*10矩阵，因为一次输入256张图，10个分类结果
+    loss=-torch.log(y_hat[range(len(y_hat)), y])  # loss = 256向量
+    # len([[1,2][3,4]]) = 2
+    return loss
 
 #@save
 class MaskedSoftmaxCELoss(nn.CrossEntropyLoss):
